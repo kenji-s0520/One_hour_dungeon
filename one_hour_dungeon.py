@@ -26,13 +26,18 @@ imgItem = [
     pygame.image.load("image/blaze_gem.png"),
     pygame.image.load("image/spoiled.png"),
     pygame.image.load("image/apple.png"),
-    pygame.image.load("image/meat.png")
+    pygame.image.load("image/meat.png"),
+    
+]
+imgWepon = [
+    pygame.image.load("image/sword_mini.png")
 ]
 imgFloor = [
     pygame.image.load("image/floor.png"),
     pygame.image.load("image/tbox.png"),
     pygame.image.load("image/cocoon.png"),
     pygame.image.load("image/stairs.png"),
+    pygame.image.load("image/sword.png"),
 ]
 imgPlayer = [
     pygame.image.load("image/mychr0.png"),
@@ -65,10 +70,12 @@ pl_a = 0
 pl_lifemax = 0
 pl_life = 0
 pl_str = 0
+wepon_hp = 0
 potion = 0
 food = 0
 blazegem = 0
 treasure = 0
+sword = 0
 
 emy_name = ""
 emy_lifemax = 0
@@ -84,6 +91,7 @@ btl_cmd = 0
 
 COMMAND = ["[A]ttack", "[P]otion", "[B]laze gem", "[R]un", "[Q]save"]
 TRE_NAME = ["Potion", "Blaze gem", "Food spoiled.", "Food +20", "Food +100"]
+WEPON_NAME = ["Sword +10"]
 EMY_NAME = [
     "スライム", "巨大ネズミ", "動く石像", "スケルトン", "ゾンビナイト",
     "暗黒騎士", "キマイラ", "ドラゴン", "ダークドラゴン", "Hell", "ミミック"
@@ -158,7 +166,7 @@ def draw_dungeon(bg, fnt):  # ダンジョンを描画する
             dx = pl_x + x
             dy = pl_y + y
             if 0 <= dx and dx < DUNGEON_W and 0 <= dy and dy < DUNGEON_H:
-                if dungeon[dy][dx] <= 3:
+                if dungeon[dy][dx] <= 4:
                     bg.blit(imgFloor[dungeon[dy][dx]], [X, Y])
                 if dungeon[dy][dx] == 9:
                     bg.blit(imgWall, [X, Y-40])
@@ -181,12 +189,12 @@ def put_event(): # 床にイベントを配置する
                     dungeon[y+ry][x+rx] = 0
             dungeon[y][x] = 3
             break
-    # 宝箱と繭の配置
+    # 宝箱と繭の配置 * 追加で剣の配置 オリジナル
     for i in range(60):
-        x = random.randint(3, DUNGEON_W-4)
-        y = random.randint(3, DUNGEON_H-4)
+        x = random.randint(4, DUNGEON_W-4)
+        y = random.randint(4, DUNGEON_H-4)
         if (dungeon[y][x] == 0):
-              dungeon[y][x] = random.choice([1,2,2,2,2])
+              dungeon[y][x] = random.choice([1,1,2,2,2,2,4])
     # プレイヤーの初期位置
     while True:
         pl_x = random.randint(3, DUNGEON_W-4)
@@ -197,12 +205,11 @@ def put_event(): # 床にイベントを配置する
     pl_a = 2
 
 def move_player(key): # 主人公の移動
-    global idx, tmr, pl_x, pl_y, pl_d, pl_a, pl_life, food, potion, blazegem, treasure
+    global idx, tmr, pl_x, pl_y, pl_d, pl_a, pl_life, food, potion, blazegem, treasure, sword, pl_str, wepon_hp
 
     if dungeon[pl_y][pl_x] == 1:  # 宝箱に乗った
         dungeon[pl_y][pl_x] = 0
         treasure = random.choice([0,0,0,1,1,1,1,1,2,5])
-        # treasure = random.choice([5,5,5,5,5,5,5,5,5,5])
         if treasure == 0:
             potion = potion + 1
         if treasure == 1:
@@ -215,10 +222,19 @@ def move_player(key): # 主人公の移動
             idx = 18
             tmr = 0
         return
+    if dungeon[pl_y][pl_x] == 4:    # 武器に乗った 武器の耐久値が100未満なら耐久値10回復
+        dungeon[pl_y][pl_x] = 0
+        if wepon_hp <= 90:
+            wepon_hp = wepon_hp + 10
+        if wepon_hp == 95:
+            wepon_hp = wepon_hp + 5 
+        idx = 4
+        tmr = 0
+        return
     if dungeon[pl_y][pl_x] == 2:  # 繭に乗った
         dungeon[pl_y][pl_x] = 0
         r = random.randint(0, 99)
-        if r < 40:  # 食料
+        if r < 50:  # 食料
             treasure = random.choice([3,3,3,4])
             if treasure == 3: food = food + 20
             if treasure == 4: food = food + 100
@@ -280,12 +296,13 @@ def draw_para(bg, fnt): # 主人公の能力を表示
     col = WHITE
     if pl_life < 10 and tmr%2 == 0: col = RED
     draw_text(bg, "{}/{}".format(pl_life, pl_lifemax), X+128, Y+6, fnt, col)
-    draw_text(bg, str(pl_str), X+128, Y+33, fnt, WHITE)
+    draw_text(bg, "{}+{}".format(pl_str, wepon_hp), X+128, Y+33, fnt, WHITE)    # キャラムターのSTR値に武器の耐久値を追加表示
     col = WHITE
     if food == 0 and tmr%2 == 0: col = RED
     draw_text(bg, str(food), X+128, Y+60, fnt, col)
     draw_text(bg, str(potion), X+266, Y+6, fnt, WHITE)
     draw_text(bg, str(blazegem), X+266, Y+33, fnt, WHITE)
+    
 
 def init_battle():  # 戦闘に入る準備をする
     global imgEnemy, emy_name, emy_lifemax, emy_life, emy_str, emy_x, emy_y
@@ -295,7 +312,7 @@ def init_battle():  # 戦闘に入る準備をする
     lev = random.randint(1, floor)
     imgEnemy = pygame.image.load("image/enemy"+str(typ)+".png")
     emy_name = EMY_NAME[typ] + "LV" + str(lev)
-    emy_lifemax = 60*(typ+1) + (lev-1)*10
+    emy_lifemax = 85*(typ+1) + (lev-1)*10
     emy_life = emy_lifemax
     emy_str = int(emy_lifemax/8)
     emy_x = 440-imgEnemy.get_width()/2
@@ -308,7 +325,7 @@ def init_battle_mimic():                    # 宝箱を取ると稀にミミッ�
     lev = random.randint(1, floor)
     imgEnemy = pygame.image.load("image/enemy"+str(typ)+".png")
     emy_name = EMY_NAME[typ] + "LV" + str(lev)
-    emy_lifemax = 100 *(typ-5) + (lev-1)*10
+    emy_lifemax = 130 *(typ-5) + (lev-1)*10
     emy_life = emy_lifemax
     emy_str = int(emy_lifemax/8)
     emy_x = 440-imgEnemy.get_width()/2
@@ -386,7 +403,7 @@ def set_message(msg):
 
 def main(): # メイン処理
     global speed, idx, tmr, floor, fl_max, welcome
-    global pl_a, pl_lifemax, pl_life, pl_str, food, potion, blazegem
+    global pl_a, pl_lifemax, pl_life, pl_str, food, potion, blazegem, wepon_hp
     global emy_life, emy_step, emy_blink, dmg_eff
     dmg = 0
     lif_p = 0
@@ -473,7 +490,8 @@ def main(): # メイン処理
                 welcome = 15
                 pl_lifemax = 300
                 pl_life = pl_lifemax
-                pl_str = 100
+                pl_str = 50
+                wepon_hp = 100
                 food = 300
                 potion = 0
                 blazegem = 0
@@ -522,6 +540,13 @@ def main(): # メイン処理
             draw_dungeon(screen, fontS)
             screen.blit(imgItem[treasure], [320, 220])
             draw_text(screen, TRE_NAME[treasure], 380, 240, font, WHITE)
+            if tmr == 10:
+                idx = 1
+
+        elif idx == 4:  # 剣の入手
+            draw_dungeon(screen, fontS)
+            screen.blit(imgWepon[sword], [320, 220])
+            draw_text(screen, WEPON_NAME[sword], 380, 240, font, WHITE)
             if tmr == 10:
                 idx = 1
 
@@ -581,6 +606,8 @@ def main(): # メイン処理
             if battle_command(screen, font, key) == True:
                 if btl_cmd == 0:
                     idx = 12
+                    wepon_hp = wepon_hp - 5                     # 武器の耐久値を減らします
+                    set_message("武器の切れ味が５下がった！")
                     tmr = 0
                 if btl_cmd == 1 and potion > 0:
                     idx = 20
@@ -597,7 +624,7 @@ def main(): # メイン処理
             if tmr == 1:
                 set_message("あなたの攻撃！")
                 se[0]. play()
-                dmg = pl_str + random.randint(0, 9)
+                dmg = pl_str + wepon_hp + random.randint(0, 9)
             if 2 <= tmr and tmr <= 4:
                 screen.blit(imgEffect[0], [700-tmr*120, -100+tmr*120])
             if tmr == 5:
