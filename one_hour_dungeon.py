@@ -441,6 +441,7 @@ def main(): # メイン処理
                     file.write(str(pl_life)+"\n"),
                     file.write(str(pl_lifemax)+"\n"),
                     file.write(str(pl_str)+"\n"),
+                    file.write(str(wepon_hp)+"\n"),
                     file.write(str(potion)+"\n"),
                     file.write(str(blazegem)+"\n"),
                     file.write(str(food)+"\n"),
@@ -452,6 +453,7 @@ def main(): # メイン処理
                     pl_life = file.readline()       # save.txtに保存されている文字列を順番に読み込む
                     pl_lifemax = file.readline()
                     pl_str = file.readline()
+                    wepon_hp = file.readline()
                     potion = file.readline()
                     blazegem = file.readline()
                     food = file.readline()
@@ -460,6 +462,7 @@ def main(): # メイン処理
                     pl_life = int(pl_life)          # 文字列を数字に変換して代入する
                     pl_lifemax = int(pl_lifemax)
                     pl_str = int(pl_str)
+                    wepon_hp = int(wepon_hp)
                     potion = int(potion)
                     blazegem = int(blazegem)
                     food = float(food)
